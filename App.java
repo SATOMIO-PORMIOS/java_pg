@@ -3,7 +3,12 @@
 import com.sun.net.httpserver.HttpServer;
 // 待ち受けるポート番号を指定する道具を読み込みます。
 import java.net.InetSocketAddress;
+// URL用に変換された文字を元に戻す道具を読み込みます。
 import java.net.URLDecoder;
+// リストを作って文字列を並べる道具を読み込みます。
+import java.util.ArrayList;
+// 文字列の一覧を扱う型を読み込みます。
+import java.util.List;
 
 // Appという名前のプログラムを定義します。
 public class App {
@@ -19,6 +24,8 @@ public class App {
             String message;
             // URLから受け取った名前を入れる変数を用意します。
             String name = "";
+            // 通常の応答形式をUTF-8のテキストにします。
+            exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
             // パスが「/hello」か比べます。
             if (path.equals("/hello")) {
                 // if (path == "/hello") {
@@ -33,6 +40,30 @@ public class App {
                 name = URLDecoder.decode(name, "UTF-8");
                 // 名前を挨拶の文字列につなげます。
                 message = "こんにちは、" + name + "さん！";
+                // パスが「/todos」か比べます。
+            } else if (path.equals("/todos")) {
+                // Todoの文字列を入れるリストを作ります。
+                List<String> todos = new ArrayList<>();
+                todos.add("自分の今日のTodo");
+                // 1件目のTodoをリストに追加します。
+                todos.add("牛乳を買う");
+                // 2件目のTodoをリストに追加します。
+                todos.add("卵を買う");
+                // 3件目のTodoをリストに追加します。
+                todos.add("パンを買う");
+                // HTMLのリストを開きます。
+                String html = "<ul>";
+                // リストのTodoを1件ずつ取り出します。
+                for (String todo : todos) {
+                    // TodoをHTMLの項目として追加します。
+                    html += "<li>" + todo + "</li>";
+                }
+                // HTMLのリストを閉じます。
+                html += "</ul>";
+                // 組み立てたHTMLを応答にします。
+                message = html;
+                // /todosの応答形式をUTF-8のHTMLにします。
+                exchange.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
                 // パスが「/bye」か比べます。
             } else if (path.equals("/bye")) {
                 // URLのクエリ部分を取り出します。
@@ -47,8 +78,6 @@ public class App {
             } else {
                 message = "ページが見つかりません";
             }
-            // 返す内容がUTF-8の文字だと伝えます。
-            exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
             // 文字をUTF-8のデータに変換します。
             byte[] body = message.getBytes("UTF-8");
             // 正常応答とデータの長さを伝えます。
