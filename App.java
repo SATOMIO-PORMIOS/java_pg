@@ -17,9 +17,15 @@ public class App {
             // 返す文字を入れる変数を用意します。
             String message;
             // パスが「/hello」か比べます。
-            if (path.equals("/hello")){ 
+            if (path.equals("/hello")) {
                 // if (path == "/hello") {
-                message = "こんにちは！";
+                // URLのクエリ部分を取り出します。
+                String query = exchange.getRequestURI().getRawQuery();
+                // name= の後ろを切り出します。
+                System.out.println("query = " + query);
+                String name = query.substring(5);
+                // 名前を挨拶の文字列につなげます。
+                message = "こんにちは、" + name + "さん！";
                 // パスが「/bye」か比べます。
             } else if (path.equals("/bye")) {
                 message = "さようなら！";
