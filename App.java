@@ -3,6 +3,7 @@
 import com.sun.net.httpserver.HttpServer;
 // 待ち受けるポート番号を指定する道具を読み込みます。
 import java.net.InetSocketAddress;
+import java.net.URLDecoder;
 
 // Appという名前のプログラムを定義します。
 public class App {
@@ -16,19 +17,31 @@ public class App {
             String path = exchange.getRequestURI().getPath();
             // 返す文字を入れる変数を用意します。
             String message;
+            // URLから受け取った名前を入れる変数を用意します。
+            String name = "";
             // パスが「/hello」か比べます。
             if (path.equals("/hello")) {
                 // if (path == "/hello") {
                 // URLのクエリ部分を取り出します。
                 String query = exchange.getRequestURI().getRawQuery();
                 // name= の後ろを切り出します。
+                // queryの中身をターミナルに表示します。
                 System.out.println("query = " + query);
-                String name = query.substring(5);
+                // queryの先頭5文字（name=）を除いた部分をnameに入れます。
+                name = query.substring(5);
+                // URL用に変換された名前をUTF-8で元に戻します。
+                name = URLDecoder.decode(name, "UTF-8");
                 // 名前を挨拶の文字列につなげます。
                 message = "こんにちは、" + name + "さん！";
                 // パスが「/bye」か比べます。
             } else if (path.equals("/bye")) {
-                message = "さようなら！";
+                // URLのクエリ部分を取り出します。
+                String query = exchange.getRequestURI().getRawQuery();
+                // queryの先頭5文字（name=）を除いた部分をnameに入れます。
+                name = query.substring(5);
+                // URL用に変換された名前をUTF-8で元に戻します。
+                name = URLDecoder.decode(name, "UTF-8");
+                message = "さようなら、" + name + "さん！";
             } else if (path.equals("/")) {
                 message = "トップページです";
             } else {
