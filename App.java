@@ -12,9 +12,22 @@ public class App {
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
         // 「/」へのアクセスを受け取る処理を登録します。
         server.createContext("/", exchange -> {
-            // ブラウザーに返す文字を用意します。
-            System.out.println("ハンドラが動いた");
-            String message = "Hello, Server! こんにちは～";
+            // アクセスされたパスを取り出します。
+            String path = exchange.getRequestURI().getPath();
+            // 返す文字を入れる変数を用意します。
+            String message;
+            // パスが「/hello」か比べます。
+            if (path.equals("/hello")){ 
+                // if (path == "/hello") {
+                message = "こんにちは！";
+                // パスが「/bye」か比べます。
+            } else if (path.equals("/bye")) {
+                message = "さようなら！";
+            } else if (path.equals("/")) {
+                message = "トップページです";
+            } else {
+                message = "ページが見つかりません";
+            }
             // 返す内容がUTF-8の文字だと伝えます。
             exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
             // 文字をUTF-8のデータに変換します。
