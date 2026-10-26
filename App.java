@@ -5,85 +5,97 @@ import com.sun.net.httpserver.HttpServer;
 import java.net.InetSocketAddress;
 // URL用に変換された文字を元に戻す道具を読み込みます。
 import java.net.URLDecoder;
+// UTF-8の文字コードを使う道具を読み込みます。
+import java.nio.charset.StandardCharsets;
 // リストを作って文字列を並べる道具を読み込みます。
 import java.util.ArrayList;
 // 文字列の一覧を扱う型を読み込みます。
 import java.util.List;
 
-// Appという名前のプログラムを定義します。
+// アプリケーション全体を表すクラスです。
 public class App {
-    // プログラムの開始位置を定義します。
+    // プログラムの開始位置です。
     public static void main(String[] args) throws Exception {
-        // 8080番ポートで待ち受けるサーバーを作ります。
+        // 8080番ポートでリクエストを待ち受けるサーバーを作ります。
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
-        // 「/」へのアクセスを受け取る処理を登録します。
+        // Todoを保存する空の一覧です。
+        List<String> todos = new ArrayList<>();
+        // すべてのパスへのアクセスを受け取る処理を登録します。
         server.createContext("/", exchange -> {
             // アクセスされたパスを取り出します。
             String path = exchange.getRequestURI().getPath();
-            // 返す文字を入れる変数を用意します。
+            // GETかPOSTかを取り出します。
+            String method = exchange.getRequestMethod();
+            // 応答する文字列を入れる変数です。
             String message;
-            // URLから受け取った名前を入れる変数を用意します。
+            // URLから受け取った名前を入れる変数です。
             String name = "";
-            // 通常の応答形式をUTF-8のテキストにします。
-            exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
-            // パスが「/hello」か比べます。
-            if (path.equals("/hello")) {
-                // if (path == "/hello") {
-                // URLのクエリ部分を取り出します。
-                String query = exchange.getRequestURI().getRawQuery();
-                // name= の後ろを切り出します。
-                // queryの中身をターミナルに表示します。
-                System.out.println("query = " + query);
-                // queryの先頭5文字（name=）を除いた部分をnameに入れます。
-                name = query.substring(5);
-                // URL用に変換された名前をUTF-8で元に戻します。
-                name = URLDecoder.decode(name, "UTF-8");
-                // 名前を挨拶の文字列につなげます。
-                message = "こんにちは、" + name + "さん！";
-                // パスが「/todos」か比べます。
-            } else if (path.equals("/todos")) {
-                // Todoの文字列を入れるリストを作ります。
-                List<String> todos = new ArrayList<>();
-                todos.add("自分の今日のTodo");
-                // 1件目のTodoをリストに追加します。
-                todos.add("牛乳を買う");
-                // 2件目のTodoをリストに追加します。
-                todos.add("卵を買う");
-                // 3件目のTodoをリストに追加します。
-                todos.add("パンを買う");
-                // HTMLのリストを開きます。
-                String html = "<ul>";
-                // リストのTodoを1件ずつ取り出します。
+
+            // POSTで /add に届いたTodoを一覧に追加します。
+            if (path.equals("/add") && method.equals("POST")) {
+                // 送信された内容をUTF-8で読み込みます。
+                String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+                // 先頭の todo= を取り除きます。
+                String value = body.substring(5);
+                // URL形式から日本語を元に戻します。
+                String todo = URLDecoder.decode(value, StandardCharsets.UTF_8);
+                // 空欄でなければTodoを一覧に追加します。
+                if (!todo.isEmpty()) {
+                    todos.add(todo);
+                }
+                // 戻り先をトップページに設定します。
+                exchange.getResponseHeaders().set("Location", "/");
+                // トップページへ移動する応答を返します。
+                exchange.sendResponseHeaders(303, -1);
+                // 通信を閉じます。
+                exchange.close();
+                // この分岐の処理を終えます。
+                return;
+            } else if (path.equals("/")) {
+                // Todoの入力フォームと一覧を含むHTMLを作ります。
+                String html = "<form method='post' action='/add'><input name='todo'><button>追加</button></form><ul>";
+                // 一覧にあるTodoを1件ずつHTMLに追加します。
                 for (String todo : todos) {
-                    // TodoをHTMLの項目として追加します。
                     html += "<li>" + todo + "</li>";
                 }
-                // HTMLのリストを閉じます。
+                // HTMLの一覧を閉じます。
                 html += "</ul>";
-                // 組み立てたHTMLを応答にします。
+                // 応答する内容を設定します。
                 message = html;
-                // /todosの応答形式をUTF-8のHTMLにします。
+                // 応答をUTF-8のHTMLにします。
                 exchange.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
-                // パスが「/bye」か比べます。
+            } else if (path.equals("/hello")) {
+                // URLのクエリ部分を取り出します。
+                String query = exchange.getRequestURI().getRawQuery();
+                // nameが指定されていれば、URL形式から名前を取り出します。
+                if (query != null && query.startsWith("name=")) {
+                    name = URLDecoder.decode(query.substring(5), StandardCharsets.UTF_8);
+                }
+                // 名前を挨拶の文字列につなげます。
+                message = "こんにちは、" + name + "さん！";
             } else if (path.equals("/bye")) {
                 // URLのクエリ部分を取り出します。
                 String query = exchange.getRequestURI().getRawQuery();
-                // queryの先頭5文字（name=）を除いた部分をnameに入れます。
-                name = query.substring(5);
-                // URL用に変換された名前をUTF-8で元に戻します。
-                name = URLDecoder.decode(name, "UTF-8");
+                // nameが指定されていれば、URL形式から名前を取り出します。
+                if (query != null && query.startsWith("name=")) {
+                    name = URLDecoder.decode(query.substring(5), StandardCharsets.UTF_8);
+                }
+                // 名前を別れの挨拶につなげます。
                 message = "さようなら、" + name + "さん！";
-            } else if (path.equals("/")) {
-                message = "トップページです";
             } else {
+                // 該当するページがないことを伝えます。
                 message = "ページが見つかりません";
             }
-            // 文字をUTF-8のデータに変換します。
-            byte[] body = message.getBytes("UTF-8");
+            // 通常応答の文字コードをUTF-8としてブラウザーに伝えます。
+            if (!path.equals("/")) {
+                exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+            }
+            // 応答する文字列をUTF-8のデータに変換します。
+            byte[] responseBody = message.getBytes(StandardCharsets.UTF_8);
             // 正常応答とデータの長さを伝えます。
-            exchange.sendResponseHeaders(200, body.length);
+            exchange.sendResponseHeaders(200, responseBody.length);
             // データをブラウザーへ送ります。
-            exchange.getResponseBody().write(body);
+            exchange.getResponseBody().write(responseBody);
             // 送信を終えて接続を閉じます。
             exchange.getResponseBody().close();
         });
